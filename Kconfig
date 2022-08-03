@@ -1,0 +1,55 @@
+#
+# Copyright (c) 2022 Laird Connectivity LLC
+#
+# SPDX-License-Identifier: LicenseRef-LairdConnectivity-Clause
+#
+menuconfig LCZ_SHELL_LOGIN
+	bool "LCZ Shell Login"
+	depends on SHELL
+	depends on SHELL_BACKEND_SERIAL
+	select SHELL_START_OBSCURED
+
+if LCZ_SHELL_LOGIN
+
+module=LCZ_SHELL_LOGIN
+module-str=LCZ_SHELL_LOGIN
+source "subsys/logging/Kconfig.template.log_config"
+
+config SHELL_LOGIN_INIT_PRIORITY
+    int "Application level init priority"
+    range 0 99
+    default APPLICATION_INIT_PRIORITY
+
+config SHELL_LOGIN_ENABLE_ATTRIBUTES
+	bool "Enable attributes"
+	depends on ATTR
+	help
+	  Enable attributes system.
+
+choice
+	prompt "Init mode"
+	default SHELL_LOGIN_INIT_USING_KCONFIG
+
+config SHELL_LOGIN_INIT_USING_KCONFIG
+	bool "Kconfig"
+	help
+	  Use Kconfig settings to init.
+
+config SHELL_LOGIN_INIT_USING_ATTRIBUTES
+	bool "Attributes"
+	depends on ATTR
+	select SHELL_LOGIN_ENABLE_ATTRIBUTES
+	help
+	  Use attributes system to init.
+
+endchoice
+
+if SHELL_LOGIN_INIT_USING_KCONFIG
+
+config SHELL_LOGIN_PASSWORD
+	string "Password"
+	default "zephyr"
+
+endif # SHELL_LOGIN_INIT_USING_KCONFIG
+
+endif # LCZ_SHELL_LOGIN
