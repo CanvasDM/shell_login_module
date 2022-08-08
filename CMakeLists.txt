@@ -5,6 +5,7 @@
 #
 if(CONFIG_LCZ_SHELL_LOGIN)
 
+zephyr_include_directories(include)
 zephyr_sources(src/lcz_shell_login.c)
 
 endif()

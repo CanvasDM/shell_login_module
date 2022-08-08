@@ -19,6 +19,7 @@ LOG_MODULE_REGISTER(lcz_shell_login, CONFIG_LCZ_SHELL_LOGIN_LOG_LEVEL);
 #if defined(CONFIG_SHELL_LOGIN_ENABLE_ATTRIBUTES)
 #include "attr.h"
 #endif
+#include "lcz_shell_login.h"
 
 /**************************************************************************************************/
 /* Local Constant, Macro and Type Definitions                                                     */
@@ -44,6 +45,7 @@ static int lcz_shell_login_init(const struct device *device);
 /* Local Data Definitions                                                                         */
 /**************************************************************************************************/
 static char *password;
+static bool user_logged_in;
 
 /**************************************************************************************************/
 /* Local Function Definitions                                                                     */
@@ -67,6 +69,7 @@ static void set_shell_logged_in(const struct shell *shell, bool logged_in)
 		z_shell_log_backend_disable(shell->log_backend);
 #endif
 	}
+	user_logged_in = logged_in;
 }
 
 static int verify_password(char *passwd)
@@ -155,6 +158,10 @@ static int lcz_shell_login_init(const struct device *device)
 /**************************************************************************************************/
 /* Global Function Definitions                                                                    */
 /**************************************************************************************************/
+bool lcz_shell_login_is_logged_in(void)
+{
+	return user_logged_in;
+}
 
 #if defined(CONFIG_SHELL_LOGIN_ENABLE_ATTRIBUTES)
 SHELL_CMD_ARG_REGISTER(passwd, NULL, "Set shell password", cmd_passwd, 2, 0);
