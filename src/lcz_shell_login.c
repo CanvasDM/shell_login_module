@@ -32,7 +32,7 @@ LOG_MODULE_REGISTER(lcz_shell_login, CONFIG_LCZ_SHELL_LOGIN_LOG_LEVEL);
 /**************************************************************************************************/
 /* Local Function Prototypes                                                                      */
 /**************************************************************************************************/
-static void set_shell_logged_in(const struct shell *shell, bool logged_in);
+static void set_shell_logged_in(const struct shell *shell, bool logged_in, bool init);
 static int cmd_login(const struct shell *shell, size_t argc, char **argv);
 static int cmd_logout(const struct shell *shell, size_t argc, char **argv);
 #if defined(CONFIG_SHELL_LOGIN_ENABLE_ATTRIBUTES)
@@ -50,24 +50,28 @@ static bool user_logged_in;
 /**************************************************************************************************/
 /* Local Function Definitions                                                                     */
 /**************************************************************************************************/
-static void set_shell_logged_in(const struct shell *shell, bool logged_in)
+static void set_shell_logged_in(const struct shell *shell, bool logged_in, bool init)
 {
 	if (logged_in) {
 		shell_obscure_set(shell, false);
 		shell_set_root_cmd(NULL);
 		shell_prompt_change(shell, SHELL_PROMPT_LOGGED_IN);
 		shell_print(shell, "\n");
+		if (init) {
 #if defined(CONFIG_SHELL_LOG_BACKEND)
-		z_shell_log_backend_enable(shell->log_backend, (void *)shell, 4);
+			z_shell_log_backend_enable(shell->log_backend, (void *)shell,
+						   LOG_LEVEL_DBG);
 #endif
+		} else {
+			log_backend_activate(shell->log_backend->backend,
+					     shell->log_backend->backend->cb->ctx);
+		}
 	} else {
 		shell_set_root_cmd(SHELL_LOGIN_COMMAND);
 		shell_obscure_set(shell, true);
 		shell_prompt_change(shell, SHELL_PROMPT_LOGGED_OUT);
 		shell_print(shell, "\n");
-#if defined(CONFIG_SHELL_LOG_BACKEND)
-		z_shell_log_backend_disable(shell->log_backend);
-#endif
+		log_backend_deactivate(shell->log_backend->backend);
 	}
 	user_logged_in = logged_in;
 }
@@ -92,7 +96,7 @@ static int cmd_login(const struct shell *shell, size_t argc, char **argv)
 
 	/* clear history so password not visible there */
 	z_shell_history_purge(shell->history);
-	set_shell_logged_in(shell, true);
+	set_shell_logged_in(shell, true, false);
 	attempts = 0;
 	return 0;
 }
@@ -103,7 +107,7 @@ static int cmd_logout(const struct shell *shell, size_t argc, char **argv)
 		shell_error(shell, "Password not set!");
 		return -EINVAL;
 	}
-	set_shell_logged_in(shell, false);
+	set_shell_logged_in(shell, false, false);
 	return 0;
 }
 
@@ -144,11 +148,11 @@ static int lcz_shell_login_init(const struct device *device)
 
 	shell = shell_backend_uart_get_ptr();
 	/* work around to ensure user typed password is obscured */
-	set_shell_logged_in(shell, true);
-	set_shell_logged_in(shell, false);
+	set_shell_logged_in(shell, true, true);
+	set_shell_logged_in(shell, false, true);
 
 	if (!is_passwd_set()) {
-		set_shell_logged_in(shell, true);
+		set_shell_logged_in(shell, true, false);
 		LOG_WRN("Shell password not set, enable shell by default.");
 	}
 
