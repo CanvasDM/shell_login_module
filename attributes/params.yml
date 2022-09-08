@@ -11,12 +11,10 @@ attributes:
     x-ctype: string
     x-broadcast: false
     x-default: "zephyr"
-    x-lockable: true
     x-prepare: false
     x-readable: false
     x-savable: true
     x-writable: true
     x-hide-in-show: true
     x-show-on-change: false
-    x-hide-in-dump: true
     summary: Password to login and use the shell
