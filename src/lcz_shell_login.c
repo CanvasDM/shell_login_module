@@ -94,8 +94,10 @@ static int cmd_login(const struct shell *shell, size_t argc, char **argv)
 		return -EINVAL;
 	}
 
+#if defined(CONFIG_SHELL_HISTORY)
 	/* clear history so password not visible there */
 	z_shell_history_purge(shell->history);
+#endif
 	set_shell_logged_in(shell, true, false);
 	attempts = 0;
 	return 0;
