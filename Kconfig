@@ -50,6 +50,13 @@ config SHELL_LOGIN_PASSWORD
 	string "Password"
 	default "zephyr"
 
+config SHELL_SESSION_TIMEOUT
+	int "Session timeout"
+	default 1
+	range 0 255
+	help
+	  Time before a login session will expire (in minutes). Set to 0 to disable.
+
 endif # SHELL_LOGIN_INIT_USING_KCONFIG
 
 endif # LCZ_SHELL_LOGIN

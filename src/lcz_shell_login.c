@@ -9,15 +9,16 @@
 /**************************************************************************************************/
 /* Includes                                                                                       */
 /**************************************************************************************************/
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(lcz_shell_login, CONFIG_LCZ_SHELL_LOGIN_LOG_LEVEL);
 
 #include <zephyr.h>
-#include <init.h>
-#include <shell/shell.h>
-#include <shell/shell_uart.h>
+#include <zephyr/init.h>
+#include <zephyr/shell/shell.h>
+#include <zephyr/shell/shell_uart.h>
+#include <zephyr/logging/log_ctrl.h>
 #if defined(CONFIG_SHELL_LOGIN_ENABLE_ATTRIBUTES)
-#include "attr.h"
+#include <attr.h>
 #endif
 #include "lcz_shell_login.h"
 
@@ -40,18 +41,32 @@ static int cmd_passwd(const struct shell *shell, size_t argc, char **argv);
 #endif
 static bool is_passwd_set(void);
 static int lcz_shell_login_init(const struct device *device);
+static void session_expired_work_handler(struct k_work *Item);
 
 /**************************************************************************************************/
 /* Local Data Definitions                                                                         */
 /**************************************************************************************************/
 static char *password;
 static bool user_logged_in;
+static struct k_work_delayable session_expired_work;
 
 /**************************************************************************************************/
 /* Local Function Definitions                                                                     */
 /**************************************************************************************************/
+static void session_expired_work_handler(struct k_work *Item)
+{
+	if (is_passwd_set()) {
+		LOG_WRN("Login session expired");
+		set_shell_logged_in(shell_backend_uart_get_ptr(), false, false);
+	} else {
+		LOG_WRN("Shell password is not set, cannot expire session.");
+	}
+}
+
 static void set_shell_logged_in(const struct shell *shell, bool logged_in, bool init)
 {
+	uint8_t session_timeout;
+
 	if (logged_in) {
 		shell_obscure_set(shell, false);
 		shell_set_root_cmd(NULL);
@@ -74,6 +89,18 @@ static void set_shell_logged_in(const struct shell *shell, bool logged_in, bool 
 		log_backend_deactivate(shell->log_backend->backend);
 	}
 	user_logged_in = logged_in;
+
+	if (user_logged_in && is_passwd_set() && !init) {
+#if defined(CONFIG_SHELL_SESSION_TIMEOUT)
+		session_timeout = CONFIG_SHELL_SESSION_TIMEOUT;
+#else
+		session_timeout = *(uint8_t *)attr_get_quasi_static(ATTR_ID_shell_session_timeout);
+#endif
+		LOG_WRN("Login session will expire in %d minutes", session_timeout);
+		k_work_reschedule(&session_expired_work, K_MINUTES(session_timeout));
+	} else {
+		k_work_cancel_delayable(&session_expired_work);
+	}
 }
 
 static int verify_password(char *passwd)
@@ -125,6 +152,7 @@ static int cmd_passwd(const struct shell *shell, size_t argc, char **argv)
 		shell_error(shell, "Could not set password [%d]", ret);
 	} else {
 		shell_print(shell, "Ok");
+		LOG_INF("Set shell password");
 	}
 
 	return ret;
@@ -141,6 +169,8 @@ static int lcz_shell_login_init(const struct device *device)
 	const struct shell *shell;
 
 	ARG_UNUSED(device);
+
+	k_work_init_delayable(&session_expired_work, session_expired_work_handler);
 
 #if defined(CONFIG_SHELL_LOGIN_INIT_USING_KCONFIG)
 	password = CONFIG_SHELL_LOGIN_PASSWORD;

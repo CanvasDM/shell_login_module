@@ -18,3 +18,15 @@ attributes:
     x-hide-in-show: true
     x-show-on-change: false
     summary: Password to login and use the shell
+  - name: shell_session_timeout
+    summary: Time before a login session will expire (in minutes). Set to 0 to disable.
+    required: true
+    schema:
+      minimum: 0
+      maximum: 255
+      type: integer
+    x-ctype: uint8_t
+    x-default: 1
+    x-readable: true
+    x-savable: true
+    x-writable: true
