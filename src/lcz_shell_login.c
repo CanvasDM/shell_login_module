@@ -20,6 +20,8 @@ LOG_MODULE_REGISTER(lcz_shell_login, CONFIG_LCZ_SHELL_LOGIN_LOG_LEVEL);
 #if defined(CONFIG_SHELL_LOGIN_ENABLE_ATTRIBUTES)
 #include <attr.h>
 #endif
+#include <lcz_memfault.h>
+
 #include "lcz_shell_login.h"
 
 /**************************************************************************************************/
@@ -114,6 +116,8 @@ static int cmd_login(const struct shell *shell, size_t argc, char **argv)
 
 	if (verify_password(argv[1]) != 0) {
 		shell_error(shell, "Invalid password!");
+		LOG_ERR("Invalid password!");
+		MFLT_METRICS_ADD(shell_login_fail, 1);
 		attempts++;
 		if (attempts > 3) {
 			k_sleep(K_SECONDS(attempts));
@@ -153,6 +157,7 @@ static int cmd_passwd(const struct shell *shell, size_t argc, char **argv)
 	} else {
 		shell_print(shell, "Ok");
 		LOG_INF("Set shell password");
+		MFLT_METRICS_ADD(shell_passwd_change, 1);
 	}
 
 	return ret;

@@ -1,0 +1,2 @@
+MEMFAULT_METRICS_KEY_DEFINE(shell_login_fail, kMemfaultMetricType_Unsigned)
+MEMFAULT_METRICS_KEY_DEFINE(shell_passwd_change, kMemfaultMetricType_Unsigned)
