@@ -26,7 +26,7 @@ attributes:
       maximum: 255
       type: integer
     x-ctype: uint8_t
-    x-default: 1
+    x-default: 5
     x-readable: true
     x-savable: true
     x-writable: true
